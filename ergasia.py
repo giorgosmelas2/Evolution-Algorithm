@@ -6,6 +6,14 @@ while(distance < 0 or distance > 5000):
     distance = int(input("Distance has to be from 1 up to 5000 kilometers. Give again: "))
 length_array = []
 rods_array = []
+
+with open("inputs.txt") as f:
+    for line in f.readlines():
+        inputs = line.split(",")
+        length_array.append(int(inputs[0]))
+        rods_array.append(int(inputs[1]))
+
+"""
 i = 1
 
 while(True): 
@@ -22,9 +30,12 @@ while(True):
     else:
         break
 
+            
+"""
+
 def initialize_population():
     population = []
-    for _ in range(6):
+    for _ in range(350):
         individual = []
         for i in range(len(length_array)):
             gene = np.random.randint(0, rods_array[i])
@@ -36,8 +47,16 @@ def initialize_population():
 def fitness_func(ga_instance, solution, solution_idx):
     total_length = sum(solution[i]*length_array[i] for i in range(len(length_array)))
     total_connections = sum(solution) - 1 
-    penalty = abs(total_length - distance) * 10 
-    total_penalty = penalty + total_connections * 5
+    penalty = abs(total_length - distance) ** 2
+    total_penalty = penalty + total_connections * 2
+    """
+    print("-------------------------------")
+    print("Solution index: ", solution_idx)
+    print("Diffence: ", abs(total_length - distance))
+    print("Total connections: ", total_connections)
+    print("Penalty: ", penalty)
+    print("Total penalty: ", total_penalty)
+    """
     return -total_penalty
 
 def crossover_func(parents, offspring_size, ga_instance):
@@ -53,31 +72,34 @@ def crossover_func(parents, offspring_size, ga_instance):
     return np.array(offspring)
             
 def mutation_func(offspring, ga_instance):
-    upper_limit_of_geme = ga_instance.gene_space
     for chromosome_idx in range(offspring.shape[0]):
-        random_gene_idx = np.random.choice(range(offspring.shape[1]))
-        offspring[chromosome_idx, random_gene_idx] += np.random.randint(0, upper_limit_of_geme[random_gene_idx])
+        num_gemes_to_mutate = np.random.randint(1, offspring.shape[1] // 5 + 1)
+        for _ in range(num_gemes_to_mutate):
+            random_gene_idx = np.random.choice(range(offspring.shape[1]))
+            upper_limit_of_geme = ga_instance.gene_space[random_gene_idx]
+            offspring[chromosome_idx, random_gene_idx] += np.random.randint(0, upper_limit_of_geme)
     return offspring
-
-print(f"length_array: {length_array}")
-print(f"rods_array: {rods_array}")
-print(f"Population:\n{initialize_population()}")
 
 num_genes = len(length_array)
 initial_population = initialize_population()
+parent_selection_type = "tournament"
 gene_space = []
 for i in range(len(rods_array)):
     gene_space.append(rods_array[i])
 
-ga_instance = pg.GA(num_generations=100,
-                    sol_per_pop=6,
-                    num_parents_mating=2,
+ga_instance = pg.GA(num_generations=450,
+                    sol_per_pop=350,
+                    num_parents_mating=350,
+                    keep_elitism = 20,
+                    parent_selection_type=parent_selection_type,
+                    K_tournament = 4,
                     num_genes= num_genes,
                     initial_population=initial_population,
                     fitness_func=fitness_func,
                     crossover_type=crossover_func,
                     mutation_type=mutation_func,
-                    gene_space=gene_space
+                    gene_space=gene_space,
+                    mutation_probability=0.1
 )
 
 ga_instance.run()
@@ -85,6 +107,7 @@ best_solution, best_fitness, _ =  ga_instance.best_solution()
 total_length = sum(best_solution[i] * length_array[i] for i in range(len(length_array)) )
 
 print("Best solution (number of rods):", best_solution)
+print("Parent Selection Method:", ga_instance.parent_selection_type)
 print("Best fitness:", best_fitness)
 print("Total length of given robs", sum(length_array[i] * rods_array[i] for i in range(len(length_array)))) 
 print("Total length of robs:", total_length)
@@ -92,6 +115,4 @@ print("Target distance:", distance)
     
 
 
-
-
-
+    
