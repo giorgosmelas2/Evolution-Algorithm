@@ -1,19 +1,40 @@
 import pygad as pg
 import numpy as np
 
-distance = int(input("How many kilometers the distance is: "))
+distance = float(input("How many kilometers the distance is: "))
 while(distance <= 0 or distance > 5000):
-    distance = int(input("Distance has to be from 1 up to 5000 kilometers. Give again: "))
+    distance = float(input("Distance has to be from 1 up to 5000 kilometers. Give again: "))
 length_array = []
 rods_array = []
-
+"""
+#Reading the inputs from a file 
 with open("inputs.txt") as f:
     for line in f.readlines():
         inputs = line.split(",")
         length_array.append(int(inputs[0]))
         rods_array.append(int(inputs[1]))
+"""
+
+#Create demical inputs randomly
+for i in range(20):
+    length = np.random.uniform(1.0, 201.0)
+    rods = np.random.uniform(1.0,101.0)
+    length_rounded = round(length, 2)
+    rods_rounded = round(rods, 2)
+    length_array.append(length_rounded)
+    rods_array.append(rods_rounded)
 
 """
+#Create  inputs randomly
+for i in range(20):
+    length = np.random.uniform(1, 201)
+    rods = np.random.uniform(1, 101)
+    length_array.append(length)
+    rods_array.append(rods)
+"""
+
+"""
+#Give inputs manual
 i = 1
 
 while(True): 
@@ -92,7 +113,7 @@ gene_space = []
 for i in range(len(rods_array)):
     gene_space.append(rods_array[i])
 
-ga_instance = pg.GA(num_generations=140,
+ga_instance = pg.GA(num_generations=170,
                     sol_per_pop=140,
                     num_parents_mating=140,
                     keep_elitism = 2,
@@ -110,14 +131,17 @@ ga_instance = pg.GA(num_generations=140,
 ga_instance.run()
 
 best_solution, best_fitness, _ =  ga_instance.best_solution()
-total_length = sum(best_solution[i] * length_array[i] for i in range(len(length_array)))
+total_length = round(sum(best_solution[i] * length_array[i] for i in range(len(length_array))), 2)
+total_length_of_given_rods = round(sum(length_array[i] * rods_array[i] for i in range(len(length_array))), 2)
+acurancy = (total_length / distance) * 100 
 
 print("Best solution (number of rods):", best_solution)
 print("Parent selection method:", ga_instance.parent_selection_type)
 print("Best fitness:", best_fitness)
-print("Total length of given robs", sum(length_array[i] * rods_array[i] for i in range(len(length_array)))) 
-print("Total length of robs:", total_length)
+print("Total length of given robs:", total_length_of_given_rods) 
+print("Total length of solution:", total_length)
 print("Target distance:", distance)
+print(f"Acurancy: {acurancy:.2f}%")
     
 
 
