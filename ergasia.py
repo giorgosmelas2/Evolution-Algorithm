@@ -2,7 +2,7 @@ import pygad as pg
 import numpy as np
 
 distance = int(input("How many kilometers the distance is: "))
-while(distance < 0 or distance > 5000):
+while(distance <= 0 or distance > 5000):
     distance = int(input("Distance has to be from 1 up to 5000 kilometers. Give again: "))
 length_array = []
 rods_array = []
@@ -28,40 +28,44 @@ while(True):
         length_array.append(length)
         rods_array.append(rods)
     else:
-        break
-
-            
+        break            
 """
 
 def initialize_population():
     population = []
-    for _ in range(350):
+    for _ in range(140):
         individual = []
         for i in range(len(length_array)):
             gene = np.random.randint(0, rods_array[i])
             individual.append(gene)
-        population.append(individual)
-    return np.array(population)
 
+        population.append(individual)
+
+    return np.array(population)
 
 def fitness_func(ga_instance, solution, solution_idx):
     total_length = sum(solution[i]*length_array[i] for i in range(len(length_array)))
-    total_connections = sum(solution) - 1 
+    
+    total_connections = max(0,sum(solution) - 1) 
+    connections_penalty = total_connections ** 1.5
+
     penalty = abs(total_length - distance) ** 2
-    total_penalty = penalty + total_connections * 2
-    """
-    print("-------------------------------")
-    print("Solution index: ", solution_idx)
-    print("Diffence: ", abs(total_length - distance))
-    print("Total connections: ", total_connections)
-    print("Penalty: ", penalty)
-    print("Total penalty: ", total_penalty)
-    """
+
+    overage_penalty = 0
+    if total_length > distance:
+        overage_penalty = abs(total_length - distance) ** 2.5
+
+    downrange_penalty = 0
+    if total_length < distance:
+        downrange_penalty = abs(total_length - distance) ** 3
+
+    total_penalty = penalty + connections_penalty + overage_penalty + downrange_penalty
     return -total_penalty
 
 def crossover_func(parents, offspring_size, ga_instance):
     offspring = []
     idx = 0
+
     while len(offspring) != offspring_size[0]:
         parent1 = parents[idx % parents.shape[0], :].copy()
         parent2 = parents[(idx + 1) % parents.shape[0], :].copy()
@@ -73,26 +77,27 @@ def crossover_func(parents, offspring_size, ga_instance):
             
 def mutation_func(offspring, ga_instance):
     for chromosome_idx in range(offspring.shape[0]):
-        num_gemes_to_mutate = np.random.randint(1, offspring.shape[1] // 5 + 1)
-        for _ in range(num_gemes_to_mutate):
-            random_gene_idx = np.random.choice(range(offspring.shape[1]))
-            upper_limit_of_geme = ga_instance.gene_space[random_gene_idx]
-            offspring[chromosome_idx, random_gene_idx] += np.random.randint(0, upper_limit_of_geme)
+        random_gene_idx = np.random.choice(range(offspring.shape[1]))
+        upper_limit_of_gene = ga_instance.gene_space[random_gene_idx]
+        new_gene_value = np.random.randint(0, upper_limit_of_gene + 1)
+        offspring[chromosome_idx, random_gene_idx] = new_gene_value
     return offspring
 
-num_genes = len(length_array)
-initial_population = initialize_population()
 parent_selection_type = "tournament"
+
+initial_population = initialize_population()
+num_genes = len(length_array)
+
 gene_space = []
 for i in range(len(rods_array)):
     gene_space.append(rods_array[i])
 
-ga_instance = pg.GA(num_generations=450,
-                    sol_per_pop=350,
-                    num_parents_mating=350,
-                    keep_elitism = 20,
+ga_instance = pg.GA(num_generations=140,
+                    sol_per_pop=140,
+                    num_parents_mating=140,
+                    keep_elitism = 2,
                     parent_selection_type=parent_selection_type,
-                    K_tournament = 4,
+                    K_tournament = 2,
                     num_genes= num_genes,
                     initial_population=initial_population,
                     fitness_func=fitness_func,
@@ -103,11 +108,12 @@ ga_instance = pg.GA(num_generations=450,
 )
 
 ga_instance.run()
+
 best_solution, best_fitness, _ =  ga_instance.best_solution()
-total_length = sum(best_solution[i] * length_array[i] for i in range(len(length_array)) )
+total_length = sum(best_solution[i] * length_array[i] for i in range(len(length_array)))
 
 print("Best solution (number of rods):", best_solution)
-print("Parent Selection Method:", ga_instance.parent_selection_type)
+print("Parent selection method:", ga_instance.parent_selection_type)
 print("Best fitness:", best_fitness)
 print("Total length of given robs", sum(length_array[i] * rods_array[i] for i in range(len(length_array)))) 
 print("Total length of robs:", total_length)
