@@ -1,5 +1,7 @@
 import pygad as pg
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 distance = float(input("How many kilometers the distance is: "))
 while(distance <= 0 or distance > 5000):
@@ -14,7 +16,7 @@ with open("inputs.txt") as f:
         length_array.append(int(inputs[0]))
         rods_array.append(int(inputs[1]))
 """
-
+"""
 #Create demical inputs randomly
 for i in range(20):
     length = np.random.uniform(1.0, 201.0)
@@ -23,15 +25,15 @@ for i in range(20):
     rods_rounded = round(rods, 2)
     length_array.append(length_rounded)
     rods_array.append(rods_rounded)
-
 """
-#Create  inputs randomly
+
+#Create inputs randomly
 for i in range(20):
-    length = np.random.uniform(1, 201)
-    rods = np.random.uniform(1, 101)
+    length = np.random.randint(1, 201)
+    rods = np.random.randint(1, 101)
     length_array.append(length)
     rods_array.append(rods)
-"""
+
 
 """
 #Give inputs manual
@@ -104,6 +106,37 @@ def mutation_func(offspring, ga_instance):
         offspring[chromosome_idx, random_gene_idx] = new_gene_value
     return offspring
 
+#Function for tracking fitness and show it on plot
+fitness_history = []
+def fitness_tracking(ga_instance):
+    global fitness_history
+    fitness_history.append(ga_instance.best_solution()[1])
+
+# Tracks the average deviation of individuals from the best solution, indicating convergence towards optimality.
+deviation_history = []
+def convergence_tracking(ga_instance):
+    global deviation_history
+    best_solution = ga_instance.best_solution()[0]
+    population_deviation = [
+        sum(abs(best_solution[i] - individual[i]) for i in range(len(best_solution)))
+        for individual in ga_instance.population
+    ]
+    average_deviation = np.mean(population_deviation)
+    deviation_history.append(average_deviation)
+
+# Tracks the variation in fitness values across the population to monitor the diversity of solutions.
+fitness_variation_history = []
+def fitness_variation_tracking(ga_instance):
+    global fitness_variation_history
+    population_fitness = [ga_instance.fitness_func(ga_instance, solution, idx)
+                          for idx, solution in enumerate(ga_instance.population)]
+    fitness_variation_history.append(np.std(population_fitness))
+
+def combined_tracking(ga_instance):
+    fitness_tracking(ga_instance)
+    convergence_tracking(ga_instance)
+    fitness_variation_tracking(ga_instance)
+
 parent_selection_type = "tournament"
 
 initial_population = initialize_population()
@@ -128,6 +161,7 @@ ga_instance = pg.GA(num_generations=170,
                     mutation_probability=0.1
 )
 
+ga_instance.on_generation = combined_tracking
 ga_instance.run()
 
 best_solution, best_fitness, _ =  ga_instance.best_solution()
@@ -143,6 +177,33 @@ print("Total length of solution:", total_length)
 print("Target distance:", distance)
 print(f"Acurancy: {acurancy:.2f}%")
     
+#Plots
+fig, axes = plt.subplots(3, 1, figsize=(10, 18))  # 3 γραφήματα, 1 στήλη
 
+#Fitness plot
+axes[0].plot(fitness_history, label="Best Fitness per Generation", color="blue")
+axes[0].set_title("Evolution of Fitness")
+axes[0].set_xlabel("Generations")
+axes[0].set_ylabel("Fitness")
+axes[0].legend()
+axes[0].grid()
 
-    
+#Convergence of individuals to the best solution
+axes[1].plot(deviation_history, label="Average Deviation from Best Solution", color="green")
+axes[1].set_title("Convergence of Individuals to the Best Solution")
+axes[1].set_xlabel("Generations")
+axes[1].set_ylabel("Average Deviation")
+axes[1].legend()
+axes[1].grid()
+
+#Convergence of fitness in the population
+axes[2].plot(fitness_variation_history, label="Fitness Standard Deviation", color="purple")
+axes[2].set_title("Convergence of Fitness in the Population")
+axes[2].set_xlabel("Generations")
+axes[2].set_ylabel("Fitness Variation (Standard Deviation)")
+axes[2].legend()
+axes[2].grid()
+
+plt.subplots_adjust(hspace=0.4)
+plt.show()
+
